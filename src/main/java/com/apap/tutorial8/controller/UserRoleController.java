@@ -22,7 +22,12 @@ public class UserRoleController {
 	private UserRoleService userService;
 	
 	@RequestMapping(value = "/addUser", method = RequestMethod.POST)
-	private String addUserSubmit(@ModelAttribute UserRoleModel user) {
+	private String addUserSubmit(@ModelAttribute UserRoleModel user, Model model) {
+		if(!isValid(user.getPassword())) {
+			model.addAttribute("msg","Password harus mengandung huruf, angka, dan minimum 8 karakter");
+			return "home";
+		}
+		model.addAttribute("msg","User baru berhasil ditambahkan");
 		userService.addUser(user);
 		return "home";
 	}
@@ -40,13 +45,13 @@ public class UserRoleController {
 										@RequestParam(value = "passwordConfirm") String passwordConfirm,
 										Model model) {
 		if(!password.equals(passwordConfirm)) {
-			model.addAttribute("msg2","Password tidak sesuai");
+			model.addAttribute("msg2","Password baru tidak sesuai");
 			return "changePassword";
 		}
 		UserRoleModel user = userService.findByUsername(username);
 		BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 		if (passwordEncoder.matches(oldpassword, user.getPassword())){
-			if(!password.matches(".*\\d+.*") || !password.matches(".*[a-zA-Z]+.*") || password.length()<8){
+			if(!isValid(password)){
 				model.addAttribute("msg2","Password harus mengandung huruf, angka, dan minimum 8 karakter");
 				return "changePassword";
 			}
@@ -59,16 +64,8 @@ public class UserRoleController {
 		return "changePassword";
 	}
 	
-	@RequestMapping(value = "/updatePassword", method = RequestMethod.POST)
-	@PreAuthorize("hasRole('READ_PRIVILEGE')")
-	@ResponseBody
-	private String changePassword(@RequestParam(value = "password") String password,@RequestParam("oldpassword") String oldPassword){
-		UserRoleModel user = userService.findByUsername(SecurityContextHolder.getContext().getAuthentication().getName());
-	    
-		System.out.println(user);
-		System.out.println(password);
-//		userService.addUser(user);
-		return "home";
+	public boolean isValid(String password) {
+		if(!password.matches(".*\\d+.*") || !password.matches(".*[a-zA-Z]+.*") || password.length()<8) return false;
+		return true;
 	}
-
 }
